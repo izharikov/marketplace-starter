@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { ApplicationContext, PagesContext } from "@sitecore-marketplace-sdk/client";
-import { useMarketplaceClient } from "@/src/utils/hooks/useMarketplaceClient";
+import { useMarketplaceClient } from "@/utils/hooks/useMarketplaceClient";
 
 function PagesContextPanel() {
   const { client, error, isInitialized } = useMarketplaceClient();
