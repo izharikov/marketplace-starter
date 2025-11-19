@@ -1,88 +1,83 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useMarketplaceClient } from "@/utils/hooks/useMarketplaceClient";
-import { ApplicationContext } from "@sitecore-marketplace-sdk/client";
+import { useCallback, useEffect, useState } from "react";
+import { useAppContext, useMarketplaceClient } from "@/components/providers/Marketplace";
+import { ClientSDK } from "@sitecore-marketplace-sdk/client";
+import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat, ColorPickerHue, ColorPickerOutput, ColorPickerSelection } from "@/components/ui/shadcn-io/color-picker";
+import Color, { ColorInstance, ColorLike } from "color";
+import { Button } from "@/components/ui/button";
+import { set } from "date-fns";
+import { Spinner } from "@/components/ui/spinner";
 
 function CustomFieldExtension() {
-  const { client, isInitialized, error } = useMarketplaceClient();
-  const [appContext, setAppContext] = useState<ApplicationContext>();
-  const [value, setValue] = useState<string>("");
-
-  // Preset options as buttons
-  const options = ["Option A", "Option B", "Option C"];
+  const client = useMarketplaceClient();
+  const [initialized, setInitialized] = useState(false);
+  const [fieldValue, setFieldValue] = useState<string>();
+  const [selectedColor, setSelectedColor] = useState<ColorInstance>();
+  const [status, setStatus] = useState<"saving" | "error">();
 
   useEffect(() => {
-    if (!error && isInitialized && client) {
-      console.log("Marketplace client initialized successfully.");
-      // Make a query to retrieve the application context
-      client.query("application.context")
-        .then((res) => {
-          console.log("Success retrieving application.context:", res.data);
-          setAppContext(res.data);
-        })
-        .catch((error) => {
-          console.error("Error retrieving application.context:", error);
-        });
-    } else if (error) {
-      console.error("Error initializing Marketplace client:", error);
+    async function init(client: ClientSDK) {
+      const value = await client.getValue();
+      try {
+        const color = Color(value);
+        setSelectedColor(color);
+        setFieldValue(color.hex());
+        setInitialized(true);
+      } catch (error) {
+        console.log('error initializing color:', error);
+        setInitialized(true);
+      }
     }
-  }, [client, error, isInitialized]);
+    if (client) {
+      init(client);
+    }
+  }, [client, setFieldValue, setSelectedColor]);
 
-  const handleClick = (selected: string) => {
-    setValue(selected);
-    if (client) client.setValue(selected);
-    setTimeout(() => client?.closeApp(), 1000);
+  const handleClick = () => {
+    if (!selectedColor) {
+      return;
+    }
+    setFieldValue(selectedColor.hex());
+    setStatus("saving");
+    client &&
+      client.setValue(selectedColor.hex())
+        .then(() => client.closeApp());
   };
 
-  return (
-    <div>
-      {isInitialized ? (
-        <div>
-          <h1>Welcome to {appContext?.name}</h1>
-          <p>This is a custom field extension.</p>
+  const onChange = useCallback((color: ColorLike) => {
+    setSelectedColor(new Color(color));
+  }, [setSelectedColor]);
 
-          <div className="application-context">
-            <h3>Application Context:</h3>
-            <ul className="context-details">
-              <li><strong>Name:</strong> {appContext?.name}</li>
-              <li><strong>ID:</strong> {appContext?.id}</li>
-              <li><strong>Icon URL:</strong> {appContext?.iconUrl}</li>
-              <li><strong>Installation ID:</strong> {appContext?.installationId}</li>
-              <li><strong>State:</strong> {appContext?.state}</li>
-              <li><strong>Type:</strong> {appContext?.type}</li>
-              <li><strong>URL:</strong> {appContext?.url}</li>
-            </ul>
-          </div>
-
-          <div className="custom-field-extension">
-
-          <p>Click a button to set the value.</p>
-          {options.map(opt => (
-            <button
-              key={opt}
-              style={{
-                padding: "10px 20px",
-                margin: "10px",
-                backgroundColor: value === opt ? "#0078d4" : "#eee",
-                color: value === opt ? "#fff" : "#000",
-                border: "none",
-                cursor: "pointer",
-                borderRadius: "4px"
-              }}
-              onClick={() => handleClick(opt)}
-            >
-              {opt}
-            </button>
-          ))}
+  return <div className="w-full h-full flex justify-center my-auto">
+    {initialized && (
+      <ColorPicker className="max-w-sm rounded-md border bg-background p-4 shadow-sm"
+        defaultValue={fieldValue}
+        onChange={onChange}
+      >
+        <ColorPickerSelection className="h-56" />
+        <div className="flex items-center gap-4">
+          <ColorPickerEyeDropper />
+          <div className="grid w-full gap-1">
+            <ColorPickerHue />
+            <ColorPickerAlpha />
           </div>
         </div>
-      ) : (
-        <p>Initializing extension...</p>
-      )}
-      {error && <p style={{ color: "red" }}>Error: {String(error)}</p>}
-    </div>
-  );
+        <div className="flex items-center gap-2">
+          <ColorPickerOutput />
+          <ColorPickerFormat />
+        </div>
+        <div className="flex">
+          <Button onClick={handleClick} disabled={selectedColor == null || status === "saving"} >
+            {status === "saving" && <Spinner className="size-4 text-white" />}
+            Set Color
+          </Button>
+        </div>
+      </ColorPicker>)}
+    {!initialized && (
+      <Spinner className="size-28 text-primary" />
+    )}
+  </div>
 }
 
 export default CustomFieldExtension;

@@ -1,5 +1,22 @@
 import { useAppContext } from "./providers/Marketplace";
+import { CopyButton } from "./ui/shadcn-io/copy-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+
+const CopyText = ({ text }: { text: string | undefined }) => {
+    return (
+        <div className="flex items-center gap-2">
+            <input
+                value={text}
+                readOnly
+                className="flex-1 px-3 py-2 border rounded-md"
+            />
+            <CopyButton
+                content={text}
+                variant={"outline"}
+            />
+        </div>
+    )
+}
 
 const AppContext = () => {
     const appContext = useAppContext();
@@ -24,15 +41,21 @@ const AppContext = () => {
                             </TableRow>
                             <TableRow>
                                 <TableCell>ID</TableCell>
-                                <TableCell>{appContext.id}</TableCell>
+                                <TableCell>
+                                    <CopyText text={appContext.id} />
+                                </TableCell>
                             </TableRow>
                             <TableRow>
-                                <TableCell>Icon URL</TableCell>
-                                <TableCell>{appContext.iconUrl}</TableCell>
+                                <TableCell>Icon</TableCell>
+                                <TableCell>
+                                    <img src={appContext.iconUrl} alt="App Icon" className="h-4 w-4" />
+                                </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell>Installation ID</TableCell>
-                                <TableCell>{appContext.installationId}</TableCell>
+                                <TableCell>
+                                    <CopyText text={appContext.installationId} />
+                                </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell>State</TableCell>

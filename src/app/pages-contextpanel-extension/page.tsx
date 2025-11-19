@@ -2,41 +2,16 @@
 
 import { useState, useEffect } from "react";
 import type { ApplicationContext, PagesContext } from "@sitecore-marketplace-sdk/client";
-import { useMarketplaceClient } from "@/utils/hooks/useMarketplaceClient";
+import { useAppContext } from "@/components/providers/Marketplace";
+import { useClientQuery } from "@/utils/hooks/useQuery";
 
 function PagesContextPanel() {
-  const { client, error, isInitialized } = useMarketplaceClient();
-  const [pagesContext, setPagesContext] = useState<PagesContext>();
-  const [appContext, setAppContext] = useState<ApplicationContext>();
-
-  useEffect(() => {
-    if (!error && isInitialized && client) {
-      client.query("application.context")
-        .then((res) => {
-          console.log("Success retrieving application.context:", res.data);
-          setAppContext(res.data);
-        })
-        .catch((error) => {
-          console.error("Error retrieving application.context:", error);
-        });
-      
-      client.query("pages.context", {
-        subscribe: true,
-        onSuccess: (res) => {
-          console.log("Success retrieving pages.context:", res);
-          setPagesContext(res);
-        },
-      }).catch((error) => {
-        console.error("Error retrieving pages.context:", error);
-      });
-    } else if (error) {
-      console.error("Error initializing Marketplace client:", error);
-    }
-  }, [client, error, isInitialized]);
+  const appContext = useAppContext();
+  const pagesContext = useClientQuery("pages.context", { subscribe: true });
 
   return (
     <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px", maxWidth: "600px", margin: "2rem auto" }}>
-      {isInitialized && pagesContext ? (
+      {pagesContext ? (
         <>
           <h1>Welcome to {appContext?.name}</h1>
           <p>This is a pages context panel extension.</p>
