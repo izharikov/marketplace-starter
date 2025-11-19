@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css';
+import { MarketplaceProvider } from '@/components/providers/Marketplace';
 
 export const metadata: Metadata = {
   title: 'Sitecore Marketplace Extensions',
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <MarketplaceProvider>
+          {children}
+        </MarketplaceProvider>
+      </body>
     </html>
   )
 }
