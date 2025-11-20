@@ -1,207 +1,197 @@
-'use client';
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from '@/components/ai-elements/conversation';
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-  MessageActions,
-  MessageAction,
-} from '@/components/ai-elements/message';
-import {
-  PromptInput,
-  PromptInputActionAddAttachments,
-  PromptInputActionMenu,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
-  PromptInputBody,
-  PromptInputButton,
-  PromptInputHeader,
-  type PromptInputMessage,
-  PromptInputSelect,
-  PromptInputSelectContent,
-  PromptInputSelectItem,
-  PromptInputSelectTrigger,
-  PromptInputSelectValue,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputFooter,
-  PromptInputTools,
-} from '@/components/ai-elements/prompt-input';
-import { Fragment, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
-import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
-import {
-  Source,
-  Sources,
-  SourcesContent,
-  SourcesTrigger,
-} from '@/components/ai-elements/sources';
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from '@/components/ai-elements/reasoning';
-import { Loader } from '@/components/ai-elements/loader';
-const models = [
-  {
-    name: 'GPT 4o',
-    value: 'gpt-4o',
-  },
-  {
-    name: 'GPT 4.1 Mini',
-    value: 'gpt-4.1-mini',
-  },
-];
-const ChatBotDemo = () => {
-  const [input, setInput] = useState('');
-  const [model, setModel] = useState<string>(models[0].value);
-  const { messages, sendMessage, status, regenerate } = useChat();
-  const handleSubmit = (message: PromptInputMessage) => {
-    const hasText = Boolean(message.text);
-    const hasAttachments = Boolean(message.files?.length);
-    if (!(hasText || hasAttachments)) {
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useAppContext, useMarketplaceClient, usePreviewContextId } from "@/components/providers/Marketplace";
+import { useClientQuery, usePagesContext } from "@/utils/hooks/useQuery";
+import { Button } from "@/components/ui/button";
+import { Agent } from "@sitecore-marketplace-sdk/xmc";
+import { se } from "date-fns/locale";
+import { Spinner } from "@/components/ui/spinner";
+import { set } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { CircleCheck } from "lucide-react";
+
+function PagesContextPanel() {
+  const pageContext = usePagesContext();
+  const client = useMarketplaceClient();
+  const sitecoreContextId = usePreviewContextId();
+
+  const [pageComponents, setPageComponents] = useState<Agent.GetPageComponentsResponse>();
+  const [availableComponents, setAvailableComponents] = useState<Agent.ComponentShortInfo[]>();
+
+  const [loadingAgentsData, setLoadingAgentsData] = useState(false);
+  const [recommendations, setRecommendations] = useState<string>();
+  const [generateStatus, setGenerateStatus] = useState<'layout' | 'loading' | 'success'>();
+
+  const pageId = useMemo(() => pageContext?.pageInfo?.id, [pageContext]);
+
+  useEffect(() => {
+    setLoadingAgentsData(true);
+    setRecommendations(undefined);
+    setGenerateStatus(undefined);
+  }, [pageId, setLoadingAgentsData, setRecommendations, setGenerateStatus]);
+
+  useEffect(() => {
+    (async () => {
+      if (!pageContext?.pageInfo?.id || !client || !sitecoreContextId) {
+        return;
+      }
+      const pageComponents = await client.query("xmc.agent.pagesGetComponentsOnPage", {
+        params: {
+          path: {
+            pageId: pageContext?.pageInfo?.id || ""
+          },
+          query: {
+            sitecoreContextId,
+          }
+        }
+      });
+      setPageComponents(pageComponents.data?.data);
+
+      const availableComponents = await client.query("xmc.agent.pagesGetAllowedComponentsByPlaceholder", {
+        params: {
+          path: {
+            pageId: pageContext?.pageInfo?.id || "",
+            placeholderName: "container-1"
+          },
+          query: {
+            sitecoreContextId,
+          }
+        }
+      });
+      setAvailableComponents(availableComponents.data?.data);
+      setLoadingAgentsData(false);
+    })();
+  }, [client, pageContext?.pageInfo?.id, sitecoreContextId]);
+
+  const startGenerateMetadata = async () => {
+    if (!client || !sitecoreContextId || !pageContext?.siteInfo?.name || !pageContext?.pageInfo?.route) {
       return;
     }
-    sendMessage(
-      { 
-        text: message.text || 'Sent with attachments',
-        files: message.files 
-      },
-      {
+
+    const { siteInfo, pageInfo } = pageContext;
+    setGenerateStatus('layout');
+    const renderedResult = await client.mutate("xmc.live.graphql", {
+      params: {
         body: {
-          model: model,
+          query: `query {
+  layout(site: "${siteInfo.name}", routePath: "${pageInfo.route}", language: "${pageInfo.language}") {
+    item {
+      rendered
+    }
+  }
+}`
         },
+        query: {
+          sitecoreContextId,
+        }
+      }
+    });
+    const placeholders = (renderedResult?.data?.data?.layout as any)?.item?.rendered?.sitecore?.route?.placeholders;
+
+    setGenerateStatus('loading');
+
+    const response = await fetch('/api/meta-tags', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
-    setInput('');
+      body: JSON.stringify({
+        page: pageInfo,
+        content: placeholders['headless-main']
+      })
+    })
+      .then((response) => response.json())
+
+    setRecommendations(response.result);
+    setGenerateStatus('success');
   };
+
   return (
-    <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
-      <div className="flex flex-col h-full">
-        <Conversation className="h-full">
-          <ConversationContent>
-            {messages.map((message) => (
-              <div key={message.id}>
-                {message.role === 'assistant' && message.parts.filter((part) => part.type === 'source-url').length > 0 && (
-                  <Sources>
-                    <SourcesTrigger
-                      count={
-                        message.parts.filter(
-                          (part) => part.type === 'source-url',
-                        ).length
-                      }
-                    />
-                    {message.parts.filter((part) => part.type === 'source-url').map((part, i) => (
-                      <SourcesContent key={`${message.id}-${i}`}>
-                        <Source
-                          key={`${message.id}-${i}`}
-                          href={part.url}
-                          title={part.url}
-                        />
-                      </SourcesContent>
-                    ))}
-                  </Sources>
-                )}
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case 'text':
-                      return (
-                        <Message key={`${message.id}-${i}`} from={message.role}>
-                          <MessageContent>
-                            <MessageResponse>
-                              {part.text}
-                            </MessageResponse>
-                          </MessageContent>
-                          {message.role === 'assistant' && i === messages.length - 1 && (
-                            <MessageActions>
-                              <MessageAction
-                                onClick={() => regenerate()}
-                                label="Retry"
-                              >
-                                <RefreshCcwIcon className="size-3" />
-                              </MessageAction>
-                              <MessageAction
-                                onClick={() =>
-                                  navigator.clipboard.writeText(part.text)
-                                }
-                                label="Copy"
-                              >
-                                <CopyIcon className="size-3" />
-                              </MessageAction>
-                            </MessageActions>
-                          )}
-                        </Message>
-                      );
-                    case 'reasoning':
-                      return (
-                        <Reasoning
-                          key={`${message.id}-${i}`}
-                          className="w-full"
-                          isStreaming={status === 'streaming' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id}
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      );
-                    default:
-                      return null;
-                  }
-                })}
-              </div>
-            ))}
-            {status === 'submitted' && <Loader />}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-        <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
-          <PromptInputHeader>
-            <PromptInputAttachments>
-              {(attachment) => <PromptInputAttachment data={attachment} />}
-            </PromptInputAttachments>
-          </PromptInputHeader>
-          <PromptInputBody>
-            <PromptInputTextarea
-              onChange={(e) => setInput(e.target.value)}
-              value={input}
-            />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <PromptInputTools>
-              <PromptInputActionMenu>
-                <PromptInputActionMenuTrigger />
-                <PromptInputActionMenuContent>
-                  <PromptInputActionAddAttachments />
-                </PromptInputActionMenuContent>
-              </PromptInputActionMenu>
-              <PromptInputSelect
-                onValueChange={(value) => {
-                  setModel(value);
-                }}
-                value={model}
-              >
-                <PromptInputSelectTrigger>
-                  <PromptInputSelectValue />
-                </PromptInputSelectTrigger>
-                <PromptInputSelectContent>
-                  {models.map((model) => (
-                    <PromptInputSelectItem key={model.value} value={model.value}>
-                      {model.name}
-                    </PromptInputSelectItem>
-                  ))}
-                </PromptInputSelectContent>
-              </PromptInputSelect>
-            </PromptInputTools>
-            <PromptInputSubmit disabled={!input && !status} status={status} />
-          </PromptInputFooter>
-        </PromptInput>
+    <div className="w-full h-full flex justify-center my-auto p-4">
+      <div className="flex flex-col w-full">
+        <h2 className="text-lg font-medium mb-2">Agents API</h2>
+        <hr />
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger className="w-full">Page Components</AccordionTrigger>
+            <AccordionContent>
+              <ul className="list-disc list-inside">
+                {!loadingAgentsData && pageComponents && pageComponents.components?.map((comp) => (
+                  <li key={comp.id}>
+                    {comp.componentName}
+                    {comp.dataSource && (` (Data Source: ${comp.dataSource})`)}
+                  </li>
+                ))}
+                {loadingAgentsData && [...Array(5)].map((_, i) => (
+                  <li key={i}>
+                    <Skeleton className="h-4 w-40 inline-block " />
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <hr />
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Components 'container-1' placeholder</AccordionTrigger>
+            <AccordionContent>
+              <ul className="list-disc list-inside">
+                {!loadingAgentsData && availableComponents && availableComponents.map((comp) => (
+                  <li key={comp.id}>
+                    {comp.name}
+                  </li>
+                ))}
+                {loadingAgentsData && [...Array(5)].map((_, i) => (
+                  <li key={i}>
+                    <Skeleton className="h-4 w-40 inline-block " />
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <hr />
+        <div className="flex flex-col justify-center mt-4">
+          <h2 className="text-lg font-medium mb-2">Meta Tags Generation</h2>
+          <p className="mb-2">Click the button to ask AI to generate meta tags for the page.</p>
+          <div>
+            <Button onClick={startGenerateMetadata} disabled={!!generateStatus}>Generate with AI</Button>
+          </div>
+          {generateStatus && <div className="max-w-full p-2 mt-4 border border-border rounded-md">
+            <div className="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold">
+              {generateStatus === 'layout' &&
+                <>
+                  <Spinner className="size-4 text-primary mr-1" />
+                  Get layout...
+                </>}
+              {generateStatus === 'loading' &&
+                <>
+                  <Spinner className="size-4 text-primary mr-1" />
+                  Generate meta tags...
+                </>}
+              {generateStatus === 'success' &&
+                <>
+                  <CircleCheck className="text-success mr-1" />
+                  Generated!
+                </>}
+            </div>
+            {generateStatus === "success" && <>
+              <hr />
+              <MessageResponse className="p-2">
+                {recommendations}
+              </MessageResponse>
+            </>
+            }
+          </div>
+          }
+        </div>
       </div>
-    </div>
+    </div >
   );
-};
-export default ChatBotDemo;
+}
+
+export default PagesContextPanel;
