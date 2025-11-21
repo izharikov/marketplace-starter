@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAppContext, useMarketplaceClient, usePreviewContextId } from "@/components/providers/Marketplace";
-import { useClientQuery, usePagesContext } from "@/utils/hooks/useQuery";
+import { useMarketplaceClient, usePreviewContextId } from "@/components/providers/Marketplace";
+import { usePagesContext } from "@/utils/hooks/useQuery";
 import { Button } from "@/components/ui/button";
 import { Agent } from "@sitecore-marketplace-sdk/xmc";
-import { se } from "date-fns/locale";
 import { Spinner } from "@/components/ui/spinner";
-import { set } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { MessageResponse } from "@/components/ai-elements/message";
 import { CircleCheck } from "lucide-react";
 
 function PagesContextPanel() {

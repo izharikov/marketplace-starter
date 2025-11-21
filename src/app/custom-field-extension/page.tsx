@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAppContext, useMarketplaceClient } from "@/components/providers/Marketplace";
+import { useMarketplaceClient } from "@/components/providers/Marketplace";
 import { ClientSDK } from "@sitecore-marketplace-sdk/client";
 import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat, ColorPickerHue, ColorPickerOutput, ColorPickerSelection } from "@/components/ui/shadcn-io/color-picker";
 import Color, { ColorInstance, ColorLike } from "color";
 import { Button } from "@/components/ui/button";
-import { set } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
 
 function CustomFieldExtension() {
