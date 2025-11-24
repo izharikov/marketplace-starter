@@ -25,7 +25,7 @@ const AppContext = () => {
             {appContext && (
                 <>
                     <div>
-                        <h2 className="mb-4 text-2xl font-bold">{appContext.name}</h2>
+                        <h2 className="mb-4 text-2xl font-bold">application.context</h2>
                     </div>
                     <Table>
                         <TableHeader>
@@ -43,6 +43,18 @@ const AppContext = () => {
                                 <TableCell>ID</TableCell>
                                 <TableCell>
                                     <CopyText text={appContext.id} />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell>Marketplace App Tenant ID</TableCell>
+                                <TableCell>
+                                    <CopyText text={appContext['marketplaceAppTenantId']} />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell>Organization ID</TableCell>
+                                <TableCell>
+                                    <CopyText text={appContext.organizationId} />
                                 </TableCell>
                             </TableRow>
                             <TableRow>

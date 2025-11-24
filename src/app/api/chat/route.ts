@@ -16,6 +16,9 @@ export async function POST(req: Request) {
         messages: convertToModelMessages(messages),
         system:
             'You are a helpful assistant that can answer questions and help with tasks',
+        tools: {
+            web_search: openai.tools.webSearch({})
+        }
     });
     // send sources and reasoning back to the client
     return result.toUIMessageStreamResponse({

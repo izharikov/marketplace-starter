@@ -33,7 +33,6 @@ export default function SiteInfo({ site }: Props) {
     const {
         id,
         name,
-        displayName,
         description,
         thumbnail,
         created,
@@ -50,7 +49,7 @@ export default function SiteInfo({ site }: Props) {
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold flex">
                             <FolderTree className="mr-4" />
-                            {displayName || name}
+                            {name}
                         </h3>
                         {description && <p className="text-sm text-muted-foreground">
                             {description}

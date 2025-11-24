@@ -108,9 +108,9 @@ function PagesContextPanel() {
   };
 
   return (
-    <div className="w-full h-full flex justify-center my-auto p-4">
+    <div className="w-full h-full flex justify-center my-auto p-4 mb-12">
       <div className="flex flex-col w-full">
-        <h2 className="text-lg font-medium mb-2">Agents API</h2>
+        <h2 className="text-lg font-medium mb-2">Agent API</h2>
         <hr />
         <Accordion type="single" collapsible>
           <AccordionItem value="item-1">
@@ -157,7 +157,7 @@ function PagesContextPanel() {
           <h2 className="text-lg font-medium mb-2">Meta Tags Generation</h2>
           <p className="mb-2">Click the button to ask AI to generate meta tags for the page.</p>
           <div>
-            <Button onClick={startGenerateMetadata} disabled={!!generateStatus}>Generate with AI</Button>
+            <Button onClick={startGenerateMetadata} disabled={['layout', 'loading'].includes(generateStatus ?? '')}>Generate with AI</Button>
           </div>
           {generateStatus && <div className="max-w-full p-2 mt-4 border border-border rounded-md">
             <div className="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold">

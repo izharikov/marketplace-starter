@@ -366,7 +366,7 @@ export const ColorPickerFormat = ({
 
   if (mode === 'hex') {
     const hex = color.hex();
-
+    const textColor = color.luminosity() > 0.5 ? "#000000" : "#FFFFFF";
     return (
       <div
         className={cn(
@@ -380,6 +380,7 @@ export const ColorPickerFormat = ({
           readOnly
           type="text"
           value={hex}
+          style={{'background': hex, 'color': textColor}}
         />
         <PercentageInput value={alpha} />
       </div>

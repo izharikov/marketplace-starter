@@ -41,6 +41,7 @@ export const DeploymentsDashboard = () => {
                         <TableHead>Project</TableHead>
                         <TableHead>Environment</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead>Trigger</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead></TableHead>
                     </TableRow>
@@ -57,7 +58,8 @@ export const DeploymentsDashboard = () => {
                                     {deployment.projectName}</a>
                             </TableCell>
                             <TableCell>{deployment.environmentName}</TableCell>
-                            <TableCell>{deployment.createdAt}</TableCell>
+                            <TableCell>{new Date(deployment.buildCompletedAt!).toLocaleString("en-GB")}</TableCell>
+                            <TableCell>{deployment.triggerMessage}</TableCell>
                             <TableCell>
                                 <DeploymentStatus status={deployment.deploymentStatus} />
                             </TableCell>

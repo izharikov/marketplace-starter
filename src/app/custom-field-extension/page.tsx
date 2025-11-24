@@ -7,6 +7,7 @@ import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat
 import Color, { ColorInstance, ColorLike } from "color";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { usePagesContext } from "@/utils/hooks/useQuery";
 
 function CustomFieldExtension() {
   const client = useMarketplaceClient();
@@ -14,6 +15,8 @@ function CustomFieldExtension() {
   const [fieldValue, setFieldValue] = useState<string>();
   const [selectedColor, setSelectedColor] = useState<ColorInstance>();
   const [status, setStatus] = useState<"saving" | "error">();
+
+  const pageContext = usePagesContext();
 
   useEffect(() => {
     async function init(client: ClientSDK) {
@@ -37,11 +40,18 @@ function CustomFieldExtension() {
     if (!selectedColor) {
       return;
     }
+    const val = selectedColor.hex();
     setFieldValue(selectedColor.hex());
     setStatus("saving");
-    client &&
-      client.setValue(selectedColor.hex())
+    if (client){
+      if (val === fieldValue) {
+        client.closeApp();
+        return;
+      }
+      client
+        .setValue(val)
         .then(() => client.closeApp());
+    }
   };
 
   const onChange = useCallback((color: ColorLike) => {

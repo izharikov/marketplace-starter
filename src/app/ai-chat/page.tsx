@@ -112,7 +112,7 @@ const ChatBotDemo = () => {
                     case 'text':
                       return (
                         <Message key={`${message.id}-${i}`} from={message.role}>
-                          <MessageContent>
+                          <MessageContent className='text-base'>
                             <MessageResponse>
                               {part.text}
                             </MessageResponse>
