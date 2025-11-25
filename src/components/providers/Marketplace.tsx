@@ -6,6 +6,7 @@ import React, {
     ReactNode,
     createContext,
     useContext,
+    useMemo,
 } from "react";
 import {
     ApplicationContext,
@@ -60,10 +61,6 @@ export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
         init();
     }, []);
 
-    if (loading) {
-        return <div>Attempting to connect to Sitecore Marketplace...</div>;
-    }
-
     if (error) {
         return (
             <div>
@@ -77,14 +74,6 @@ export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
         );
     }
 
-    if (!client) {
-        return null;
-    }
-
-    if (!appContext) {
-        return null;
-    }
-
     return (
         <ClientSDKContext.Provider value={client}>
             <AppContextContext.Provider value={appContext}>
@@ -95,19 +84,50 @@ export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
 };
 
 export const useMarketplaceClient = () => {
-    const context = useContext(ClientSDKContext);
-    if (!context) {
-        throw new Error(
-            "useMarketplaceClient must be used within a ClientSDKProvider"
-        );
-    }
-    return context;
+    return useContext(ClientSDKContext);
 };
 
 export const useAppContext = () => {
-    const context = useContext(AppContextContext);
-    if (!context) {
-        throw new Error("useAppContext must be used within a ClientSDKProvider");
-    }
-    return context;
+    return useContext(AppContextContext);
 };
+
+export const usePreviewContextId = () => {
+    const appContext = useAppContext();
+    return useMemo(() => appContext?.resourceAccess?.[0]?.context.preview, [appContext]);
+}
+
+export const useLiveContextId = () => {
+    const appContext = useAppContext();
+    return useMemo(() => appContext?.resourceAccess?.[0]?.context.live, [appContext]);
+}
+
+// ...
+
+export const MySites = () => {
+    const client = useMarketplaceClient();
+    const sitecoreContextId = usePreviewContextId();
+    const [sites, setSites] = useState<Site[]>([]);
+    const loadSites = async () =>{
+        if (client && sitecoreContextId) {
+            const { data: sites } = await client.query("xmc.xmapp.listSites", {
+                params: { query: { sitecoreContextId } }
+            });
+            if (!sites?.data) {
+                return;
+            }
+            setSites(sites.data as Site[]);
+        }
+    }
+
+    loadSites();
+    return (<> {sites.map(site => <div key={site.id}>{site.name}</div>)} </>);
+}
+
+type Site = {
+    id: string;
+    name: string;
+    url: string;
+    contextId: string;
+    created: string;
+    updated: string;
+}
